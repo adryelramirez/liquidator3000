@@ -52,16 +52,21 @@ function createServer({
     });
     req.on('end', async () => {
       if (aborted) return;
-      const sealed = Buffer.concat(chunks);
-      if (sealed.length === 0) return send(400, { error: 'empty body' });
-      // Metadados NÃO sensíveis; nada de PII é lido/logado.
+      const raw = Buffer.concat(chunks);
+      if (raw.length === 0) return send(400, { error: 'empty body' });
+      let payload;
+      try {
+        payload = JSON.parse(raw.toString('utf8'));
+      } catch (_e) {
+        return send(400, { error: 'invalid json' });
+      }
+      // Metadados NÃO sensíveis.
       const meta = {
-        appVersion: req.headers['x-app-version'] || null,
-        stamp: req.headers['x-report-stamp'] || null,
-        filename: 'report.enc.txt',
+        appVersion: req.headers['x-app-version'] || payload.meta?.appVersion || null,
+        stamp: payload.meta?.stamp || null,
       };
       try {
-        await sender({ sealed, meta });
+        await sender({ reportText: payload.reportText, files: payload.files, meta });
         send(200, { ok: true });
       } catch (_e) {
         send(502, { error: 'envio falhou' });

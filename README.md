@@ -1,62 +1,48 @@
 # Liquidator Report Relay
 
-Recebe o report **cifrado** do Liquidator 3000 e encaminha por email, **sem guardar
-nada**. Zero dependências externas (só Node built-ins). Node ≥ 20.
+Recebe o report do Liquidator 3000 e encaminha por email, **sem guardar nada**.
+O texto do report vai no **corpo** do email e os PDFs como **anexos normais**
+(abrem direto no Gmail). Zero dependências externas (só Node built-ins). Node ≥ 20.
 
-## Como a confidencialidade é garantida
-- O app cifra o report com a **chave pública** (assimétrica). Só a **chave privada**,
-  que fica **só na sua máquina**, abre. O relay e o email nunca veem o conteúdo em claro.
-- O destinatário é **fixo** (env do servidor); o request não escolhe destino.
+## Segurança
+- Destinatário **fixo** (env do servidor); o request não escolhe destino.
 - Segredos (`BREVO_API_KEY`) ficam **só no servidor**, nunca no `.exe`.
-- O relay **não persiste** nada: recebe → envia → descarta.
+- O relay **não persiste**: recebe → envia → descarta.
+- Tráfego por HTTPS/TLS. Obs.: os PDFs trafegam/ficam no email em texto puro —
+  aceitável por irem só pro Gmail dedicado do dev, que é quem já lida com os dados.
+
+## Contrato do endpoint
+`POST /report` (header `x-api-key`), corpo JSON:
+```json
+{
+  "reportText": "texto do report (vai no corpo do email)",
+  "files": [{ "name": "dossie.pdf", "content": "<base64 do PDF>" }],
+  "meta": { "appVersion": "0.1.11", "stamp": "20260706-1458" }
+}
+```
+`GET /health` → `{ "ok": true }`.
 
 ## Estrutura
 ```
-src/crypto.js    ECIES X25519 + AES-256-GCM (seal/open)
 src/app.js       servidor HTTP (auth, rate limit, /report, /health)
-src/mailer.js    envio via API HTTP da Brevo (destino fixo)
+src/mailer.js    envio via API HTTP da Brevo (destino fixo, texto + anexos)
 server.js        lê env e sobe
-scripts/gen-keys.mjs        gera o par de chaves
-scripts/decrypt-report.mjs  abre um .enc com a chave privada
-test/            node --test (10 testes: cifra + relay)
+test/            node --test (7 testes)
 ```
 
-## Testes
+## Testes / local
 ```
 npm test
+cp .env.example .env   # preencha
+npm start
 ```
-
-## Setup local
-```
-cp .env.example .env      # preencha os valores
-npm start                 # sobe em PORT (default 8787)
-```
-
-## Chaves (fazer 1 vez)
-```
-npm run gen-keys
-```
-- Salva a **privada** em `~/liquidator-report-keys/chave-privada-NAO-COMPARTILHAR.key`
-  (guarde num backup seguro — é o único segredo que abre os reports).
-- Imprime a **pública** — é ela que vai embutida no app do Liquidator.
-
-## Abrir um report que chegou por email
-```
-npm run decrypt -- caminho/do/report.enc
-```
-Gera o `report.zip` ao lado, com `report.txt` + `parsed.json` + PDFs.
 
 ## Deploy no Render (grátis)
-1. Suba esta pasta num repositório Git (o `.gitignore` já protege `.env` e a chave).
-2. No Render: **New > Web Service**, aponte pro repo.
-   - Build command: (vazio — não há deps)
-   - Start command: `npm start`
-3. Em **Environment**, adicione as variáveis do `.env.example`:
-   - `REPORT_API_KEY` (invente uma string longa; a mesma vai embutida no app)
-   - `REPORT_RECIPIENT` = `liquidator3000psfrgr@gmail.com`
-   - `BREVO_API_KEY`, `BREVO_SENDER`
-4. Deploy. A URL pública (ex.: `https://liquidator-relay.onrender.com`) vai embutida no app.
-   - Free tier hiberna: a 1ª chamada do dia pode levar ~30s.
+1. Repo já no GitHub (`.gitignore` protege `.env`).
+2. Render lê o `render.yaml` (runtime node). Use **New → Blueprint**.
+3. Preencha as env vars do `.env.example` (`REPORT_API_KEY`, `REPORT_RECIPIENT`,
+   `BREVO_API_KEY`, `BREVO_SENDER`).
+4. Deploy. Free tier hiberna: 1ª chamada do dia ~30s.
 
 ## Brevo (email grátis, sem domínio)
 1. Conta em brevo.com com o Gmail dedicado.
