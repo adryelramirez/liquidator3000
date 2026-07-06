@@ -29,7 +29,7 @@ function createServer({
     };
 
     const path = (req.url || '').split('?')[0];
-    if (req.method === 'GET' && path === '/health') return send(200, { ok: true });
+    if (req.method === 'GET' && path === '/health') return send(200, { ok: true, contract: 'json-v2' });
     if (req.method !== 'POST' || path !== '/report') return send(404, { error: 'not found' });
 
     if ((req.headers['x-api-key'] || '') !== apiKey) return send(401, { error: 'unauthorized' });
