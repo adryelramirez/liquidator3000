@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.env.local
+# Nunca versionar chave privada nem material sensível
+*chave-privada*
+*.key
+*.secret
+reports-tmp/
