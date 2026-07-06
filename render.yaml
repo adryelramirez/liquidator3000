@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: liquidator3000
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: REPORT_API_KEY
+        sync: false
+      - key: REPORT_RECIPIENT
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER
+        sync: false
