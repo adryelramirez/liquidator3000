@@ -58,7 +58,7 @@ function createServer({
       const meta = {
         appVersion: req.headers['x-app-version'] || null,
         stamp: req.headers['x-report-stamp'] || null,
-        filename: 'report.enc',
+        filename: 'report.enc.txt',
       };
       try {
         await sender({ sealed, meta });

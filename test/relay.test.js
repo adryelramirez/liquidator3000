@@ -51,6 +51,18 @@ test('destino é SEMPRE o fixo, ignorando qualquer header do request', async () 
   } finally { await close(); }
 });
 
+test('anexo NÃO usa extensão .enc (Brevo rejeita) — usa .txt', async () => {
+  let captured = null;
+  const fakeFetch = async (_u, opts) => { captured = JSON.parse(opts.body); return { ok: true, text: async () => '' }; };
+  const sender = makeBrevoSender({
+    apiKey: 'brevo', senderEmail: 'a@b.com', recipient: 'a@b.com', fetchImpl: fakeFetch,
+  });
+  await sender({ sealed: Buffer.from('cifrado'), meta: { filename: 'report.enc' } });
+  const name = captured.attachment[0].name;
+  assert.ok(!/\.enc$/i.test(name), `nome não pode terminar em .enc: ${name}`);
+  assert.match(name, /\.(txt|zip|pdf|csv|xml)$/i);
+});
+
 test('não persiste em disco durante um POST válido', async () => {
   const spies = ['writeFile', 'writeFileSync', 'appendFile', 'appendFileSync', 'createWriteStream'];
   const originals = {};

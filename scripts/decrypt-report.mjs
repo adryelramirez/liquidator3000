@@ -49,7 +49,7 @@ try {
   process.exit(2);
 }
 
-const outName = basename(encPath).replace(/\.enc$/i, '') + '.zip';
+const outName = basename(encPath).replace(/\.(enc\.txt|enc|txt|zip)$/i, '') + '.zip';
 const outPath = join(dirname(encPath), outName);
 writeFileSync(outPath, clear);
 console.log('Decifrado com sucesso:');
